@@ -5,79 +5,64 @@ const configurations = {
         '#22255d',
         '#740493',
         '#fc7a2f',
-    ]
+    ],
+    OLD_ELEMENTS: ['.replace-c_1', '.replace-c_2'],
+    NEW_ELEMENTS: ['C_1', 'C_2']
 };
 
-let myDivC_1 = document.createElement('div');
-myDivC_1.id = "C_1";
-myDivC_1.setAttribute('counter', 0);
-myDivC_1.innerHTML = 'I am the first div called C_1';
+// Create the observer function
+    let observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            let element = entry.target;
+            let viewsCounter = element.getAttribute('counter');
+            let index = element.getAttribute('colorIndex');
+            element.style.backgroundColor = configurations.COLORS[index];
 
-let myDivC_2 = document.createElement('div');
-myDivC_2.id = "C_2";
-myDivC_2.setAttribute('counter', 0);
-myDivC_2.innerHTML = 'I am the second div called C_2';
+            if(entry.isIntersecting) {
+                // this runs if the threshold of the target element is 80% or more
+                if(entry.intersectionRatio >= 0.8) {
+                    element.setAttribute('startViewTimestamp', Date.now().toString());
+                    viewsCounter++;
+                    element.setAttribute('counter', viewsCounter);
+                    // this runs if the views are as much as the target
+                    if(viewsCounter == configurations.CHANGE_COLOR_AFTER_VIEWS) {
+                        index++;
+                        viewsCounter = 0;
+                        element.setAttribute('colorIndex', index);
+                        element.setAttribute('counter', viewsCounter);
+                    }
+                    // when it completes the cycle of colors it starts over
+                    if(index > configurations.COLORS.length -1) {
+                        index = 0;
+                        element.setAttribute('colorIndex', index);
+                    }
 
-let viewsCounterC_1 = myDivC_1.getAttribute('counter');
-let viewsCounterC_2 = myDivC_2.getAttribute('counter');
-let indexColorC_1 = 0;
-let indexColorC_2 = 0;
-
-// function for replace the selected elements as soon as the DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelector('.replace-c_1').replaceWith(myDivC_1);
-    document.querySelector('.replace-c_2').replaceWith(myDivC_2);
-    createObserver();
-});
-
-// Create the observer and pass it a callback function to be run whenever the threshold that is set the options is crossed
-const createObserver = () => {
-    let observer;
-    let options = {
+                }
+            } else {
+                // show the total time of the target element view
+                const startViewTimestamp = parseInt(element.getAttribute('startViewTimestamp'));
+                console.log(`Element ${element.id} has been viewed for ${(Date.now() - startViewTimestamp) / 1000}s`)
+            }
+        })
+    },
+    {
         root: null,
         rootMargin: '0px',
         threshold: 0.8
-    };
-    observer = new IntersectionObserver(handleIntersect, options);
+    }
+);
 
-    observer.observe(myDivC_1);
-    observer.observe(myDivC_2);
-};
+// function for replacing the selected elements as soon as the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    for(let i = 0; i < configurations.NEW_ELEMENTS.length; i++) {
+        let myDiv = document.createElement('div');
 
-// function to know if an element is visible, change the background color and measure the viewing time of the element
-function handleIntersect(entries) {
-    entries.forEach((entry) => {
-        let element = entry.target;
+        myDiv.id = configurations.NEW_ELEMENTS[i];
+        myDiv.setAttribute('counter', 0);
+        myDiv.setAttribute('colorIndex', 0);
+        myDiv.innerHTML = `I am the div called ${configurations.NEW_ELEMENTS[i]}`;
 
-        if(entry.isIntersecting) {
-            if(entry.intersectionRatio >= 0.8 && element.id == 'C_1') {
-                element.setAttribute('startViewTimestamp', Date.now().toString());
-                viewsCounterC_1++;
-                if(viewsCounterC_1 == configurations.CHANGE_COLOR_AFTER_VIEWS) {
-                    indexColorC_1++;
-                    viewsCounterC_1 = 0;
-                }
-            } else {
-                element.setAttribute('startViewTimestamp', Date.now().toString());
-                viewsCounterC_2++;
-                if(viewsCounterC_2 == configurations.CHANGE_COLOR_AFTER_VIEWS) {
-                    indexColorC_2++;
-                    viewsCounterC_2 = 0;
-                }
-            }
-        } else {
-            const startViewTimestamp = parseInt(element.getAttribute('startViewTimestamp'));
-            console.log(`Element ${element.id} has been viewed for ${(Date.now() - startViewTimestamp) / 1000}s`)
-        }
-
-        if(indexColorC_1 > configurations.COLORS.length -1) {
-            indexColorC_1 = 0;
-        }
-        myDivC_1.style.backgroundColor = configurations.COLORS[indexColorC_1];
-
-        if(indexColorC_2 > configurations.COLORS.length -1) {
-            indexColorC_2 = 0;
-        }
-        myDivC_2.style.backgroundColor = configurations.COLORS[indexColorC_2];
-    })
-};
+        document.querySelector(configurations.OLD_ELEMENTS[i]).replaceWith(myDiv);
+        observer.observe(myDiv);
+    }
+});
